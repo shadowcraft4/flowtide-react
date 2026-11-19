@@ -8,17 +8,16 @@ import SubjectPicker from './SubjectPicker';
 import StreakMini from './StreakMini';
 import TaskCard from './TaskCard';
 import { PauseIcon, PlayIcon } from './icons';
-import { HoverBorderGradient } from './ui/hover-border-gradient';
 import { Button, Segmented } from './ui/primitives';
 
 const MODES = [
-  { key: 'pomodoro', name: 'Pomodoro' },
-  { key: 'countdown', name: 'Countdown' },
-  { key: 'stopwatch', name: 'Stopwatch' },
+  { key: 'pomodoro', name: 'pomodoro' },
+  { key: 'countdown', name: 'countdown' },
+  { key: 'stopwatch', name: 'stopwatch' },
 ];
 
 export default function TimerView({
-  timer, settings, layout, intervalKey, onInterval, onPreset, onFullScreen,
+  timer, settings, layout, sticker, intervalKey, onInterval, onPreset, onFullScreen,
   stats, labels, selLabel, onPickSubject, onClearSubject,
   tasks, currentTask, currentTaskText, taskActions,
 }) {
@@ -28,8 +27,8 @@ export default function TimerView({
     <div className="relative mx-auto max-w-[620px] text-center">
       <Segmented
         id="mode" dataAttr="mode" options={MODES} value={mode} onChange={timer.setMode}
-        className="mb-5"
-        pillClassName="bg-gradient-to-br from-accent-soft/90 via-accent to-accent shadow-chip"
+        className="mb-5 bg-glass backdrop-blur-xl"
+        pillClassName="bg-accent shadow-chip"
       />
 
       {mode === 'pomodoro' && (
@@ -40,8 +39,8 @@ export default function TimerView({
               className={cn(
                 'flex flex-col items-center gap-0.5 rounded-tile border px-4 py-2 text-[13px] transition duration-200',
                 intervalKey === c.key
-                  ? 'border-accent/55 bg-accent/15 text-fg shadow-[inset_0_0_0_1px_rgba(139,92,246,.15)]'
-                  : 'border-line bg-white/[.03] text-muted hover:bg-white/[.06] hover:text-fg',
+                  ? 'border-accent bg-accent/20 text-fg shadow-[inset_0_0_0_1px_rgb(var(--accent)/.4)]'
+                  : 'border-line bg-glass text-muted backdrop-blur-xl hover:text-fg',
               )}
             >
               <b className="font-semibold">{c.name}</b>
@@ -67,33 +66,37 @@ export default function TimerView({
       )}
 
       {/* Keyed by mode so switching modes replays the cross-fade. */}
-      <Ring key={mode} className="viewEnter" fraction={ringFraction(mode, sec, targetMs)}>
-        <div className="phase min-h-[18px] text-[13px] font-medium uppercase tracking-[.04em] text-muted">{phaseText(mode, phase, running)}</div>
+      <Ring
+        key={mode} className="viewEnter" fraction={ringFraction(mode, sec, targetMs)}
+        extra={sticker && (
+          <span key={sticker} className="vibeSticker animate-bob rounded-full bg-accent px-3 py-1.5 text-[13.5px] font-extrabold text-accent-ink shadow-chip [font-stretch:85%]">{sticker}</span>
+        )}
+      >
+        <div className="phase min-h-[18px] text-[13px] font-medium text-muted">{phaseText(mode, phase, running)}</div>
         <ClockDisplay text={fmt(sec)} layout={layout} />
       </Ring>
 
       <div className="summary mb-1 min-h-4 text-[11.5px] text-muted">{summaryText(mode, settings)}</div>
       {currentTaskText && (
-        <div className="focusTask mx-auto mb-2.5 mt-0.5 inline-block max-w-[90%] truncate rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[12.5px] text-accent-soft">
-          Focusing on: {currentTaskText}
+        <div className="focusTask mx-auto mb-2.5 mt-0.5 inline-block max-w-[90%] truncate rounded-full border border-line bg-glass px-3 py-1 text-[12.5px] text-fg backdrop-blur-xl">
+          focusing on: {currentTaskText}
         </div>
       )}
 
       <div className="my-4 flex justify-center">
-        <HoverBorderGradient
-          as="button" onClick={timer.toggle} data-action="toggle"
-          containerClassName="rounded-full shadow-glow"
-          className="flex items-center gap-2 bg-gradient-to-br from-accent-soft/80 via-accent to-accent-deep px-12 py-3.5 text-base font-semibold text-white"
+        <button
+          onClick={timer.toggle} data-action="toggle"
+          className="flex items-center gap-2 rounded-full bg-accent px-12 py-3.5 text-base font-bold text-accent-ink shadow-glow transition duration-200 hover:brightness-105 active:scale-95"
         >
           {running ? <PauseIcon /> : <PlayIcon />}
           <span>{startLabel(running, elapsedMs)}</span>
-        </HoverBorderGradient>
+        </button>
       </div>
 
       <div className="mb-2.5 flex flex-wrap justify-center gap-2.5">
-        <Button onClick={timer.reset}>Reset</Button>
-        <Button onClick={timer.finish}>Log &amp; finish</Button>
-        <Button onClick={onFullScreen}>Full screen</Button>
+        <Button onClick={timer.reset}>reset</Button>
+        <Button onClick={timer.finish}>log &amp; finish</Button>
+        <Button onClick={onFullScreen}>full screen</Button>
       </div>
 
       <div className="mt-3.5 flex justify-center">

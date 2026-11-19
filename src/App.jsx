@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as audio from './lib/audio';
-import { DATA_KEY, DEF_SETTINGS, INTERVALS, SCENE_PARTICLES, SESSIONS_KEY, SUBJECT_PRESETS } from './lib/constants';
+import { AMBIENT_TYPES, DATA_KEY, DEF_SETTINGS, INTERVALS, SESSIONS_KEY, SUBJECT_PRESETS, applyVibeTokens, vibeByKey } from './lib/constants';
 import { computeStats } from './lib/stats';
 import { read, store } from './lib/storage';
 import { fmt, todayKey, uid } from './lib/time';
@@ -13,12 +13,13 @@ import StatsView from './components/StatsView';
 import TimerView from './components/TimerView';
 import Toolbar from './components/Toolbar';
 import SceneLayer from './components/SceneLayer';
+import { FlowtideMark } from './components/icons';
 import { Segmented } from './components/ui/primitives';
 
 const VIEWS = [
-  { key: 'timer', name: 'Timer' },
-  { key: 'stats', name: 'Stats' },
-  { key: 'settings', name: 'Settings' },
+  { key: 'timer', name: 'timer' },
+  { key: 'stats', name: 'stats' },
+  { key: 'settings', name: 'settings' },
 ];
 
 function loadData() {
@@ -45,7 +46,12 @@ export default function App() {
   useEffect(() => { store(DATA_KEY, data); }, [data]);
 
   const [layout, setLayout] = usePersistentState('flowtide.clockLayout', 'flip');
-  const [scene, setScene] = usePersistentState('flowtide.scene', 'plain');
+  const [vibeKey, setVibeKey] = usePersistentState('flowtide.vibe', 'lofi');
+  const [fxAmount, setFxAmount] = usePersistentState('flowtide.fxAmount', 0.55);
+  const [grain, setGrain] = usePersistentState('flowtide.grain', true);
+  const vibe = vibeByKey(vibeKey);
+  // Before paint, so a saved vibe never flashes the default colours first.
+  useLayoutEffect(() => { applyVibeTokens(vibe); }, [vibe]);
   const [ambientLayers, setAmbientLayers] = usePersistentState('flowtide.ambientLayers', []);
   const [volume, setVolume] = usePersistentState('flowtide.ambientVolume', 0.6);
 
@@ -74,6 +80,7 @@ export default function App() {
 
   const toggleLayer = key => setAmbientLayers(audio.toggleLayer(key));
   const changeVolume = v => { setVolume(v); audio.setVolume(v); };
+  const playMix = () => setAmbientLayers(audio.setLayers(vibe.mix));
 
   // ---- Data updates ----
   const updateSettings = patch => setData(d => ({ ...d, settings: { ...d.settings, ...patch } }));
@@ -161,28 +168,18 @@ export default function App() {
 
   return (
     <>
-      {/* Shared ring gradient, always in the DOM so the full-screen ring can use it from any page. */}
-      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
-        <defs>
-          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#c9b8ff" />
-            <stop offset="100%" stopColor="#8b5cf6" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      <SceneLayer scene={scene} />
-      <ParticleCanvas type={SCENE_PARTICLES[scene] || 'motes'} />
-      <div id="grain" />
+      <SceneLayer scene={vibe.key} />
+      <ParticleCanvas kind={vibe.fx} colors={vibe.fxColors} amount={fxAmount} />
+      <div id="grain" className={grain && !vibe.still ? '' : 'off'} />
 
       <header className="relative z-10 mx-auto flex max-w-[760px] flex-wrap items-center justify-between gap-3 px-4 pb-2 pt-5 sm:px-6">
-        <div className="font-display text-[22px] font-semibold tracking-tight text-fg">
-          Flow<span className="bg-gradient-to-r from-accent-soft to-accent bg-clip-text text-transparent">tide</span>
+        <div className="flex items-center gap-2.5 font-display text-[23px] font-extrabold tracking-[-.035em] text-fg [font-stretch:85%]">
+          <FlowtideMark className="h-7 w-7" />flowtide
         </div>
         <nav>
           <Segmented
             id="nav" dataAttr="view" options={VIEWS} value={view} onChange={setView}
-            className="bg-glass backdrop-blur-xl" pillClassName="bg-white/[.1] shadow-[inset_0_0_0_1px_rgba(255,255,255,.12)]"
+            className="border-line bg-glass backdrop-blur-xl" pillClassName="bg-fg" activeClassName="text-ink"
           />
         </nav>
       </header>
@@ -192,7 +189,7 @@ export default function App() {
         <section data-section={view} className="viewEnter" key={view}>
           {view === 'timer' && (
             <TimerView
-              timer={timer} settings={S} layout={layout}
+              timer={timer} settings={S} layout={layout} sticker={vibe.sticker}
               intervalKey={matchInterval(S)} onInterval={chooseInterval} onPreset={choosePreset}
               onFullScreen={() => setFullView(true)}
               stats={stats} labels={data.labels} selLabel={data.selLabel}
@@ -214,10 +211,22 @@ export default function App() {
 
       {fullView && <FocusView timer={timer} layout={layout} onExit={() => setFullView(false)} />}
 
+      {ambientLayers.length > 0 && !fullView && (
+        <div className="fixed bottom-5 left-5 z-30 hidden -rotate-[1.5deg] items-center gap-2.5 rounded-[14px] border border-line bg-glass py-2 pl-2.5 pr-3.5 text-[12.5px] text-fg backdrop-blur-xl lg:flex">
+          <span className="flex h-[18px] w-[22px] items-end gap-[2px]" aria-hidden="true">
+            {[0, -0.4, -0.8, -0.2].map(d => <i key={d} className="h-[30%] flex-1 animate-eq rounded-[2px] bg-accent" style={{ animationDelay: d + 's' }} />)}
+          </span>
+          <div>
+            <small className="block text-[11px] text-muted">now playing</small>
+            <b className="font-bold">{ambientLayers.map(k => AMBIENT_TYPES.find(t => t.key === k)?.name.toLowerCase()).filter(Boolean).join(' + ')}</b>
+          </div>
+        </div>
+      )}
+
       <Toolbar
         panel={panel} onPanel={setPanel} onFullScreen={() => setFullView(true)}
-        style={{ layout, onLayout: setLayout, scene, onScene: setScene }}
-        ambient={{ layers: ambientLayers, onToggle: toggleLayer, volume, onVolume: changeVolume }}
+        style={{ layout, onLayout: setLayout, vibe: vibe.key, still: !!vibe.still, onVibe: setVibeKey, amount: fxAmount, onAmount: setFxAmount, grain, onGrain: setGrain }}
+        ambient={{ layers: ambientLayers, onToggle: toggleLayer, volume, onVolume: changeVolume, vibe, onMix: playMix }}
       />
     </>
   );

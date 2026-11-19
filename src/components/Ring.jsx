@@ -10,7 +10,7 @@ export function ringFraction(mode, sec, targetMs) {
   return Math.max(0, Math.min(1, sec / target));
 }
 
-export default function Ring({ fraction, big = false, className = '', children }) {
+export default function Ring({ fraction, big = false, className = '', children, extra }) {
   const prev = useRef(null);
   // A big drop (stopwatch lapping :59 → :00) must snap, not sweep backwards round the ring.
   const snap = prev.current != null && fraction < prev.current - 0.5;
@@ -31,6 +31,7 @@ export default function Ring({ fraction, big = false, className = '', children }
         />
       </svg>
       <div className="ringInner">{children}</div>
+      {extra}
     </div>
   );
 }

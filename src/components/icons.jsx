@@ -33,3 +33,13 @@ export const ExpandIcon = ({ className }) => (
     <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
   </svg>
 );
+
+/** The Flowtide tide-gauge mark, drawn in the vibe's text colour so it matches every scene. */
+export const FlowtideMark = ({ className }) => (
+  <svg className={className} viewBox="0 0 32 32" aria-hidden="true">
+    <rect width="32" height="32" rx="7.5" fill="currentColor" />
+    <clipPath id="ftMarkClip"><circle cx="16" cy="16" r="9.6" /></clipPath>
+    <path clipPath="url(#ftMarkClip)" fill="rgb(var(--base))" d="M4 17.6c2.4-1.9 4.8-1.9 7.2 0s4.8 1.9 7.2 0 4.8-1.9 7.2 0 4.8 1.9 7.2 0V30H4z" />
+    <circle cx="16" cy="16" r="9.6" fill="none" stroke="rgb(var(--base))" strokeWidth="2.2" />
+  </svg>
+);

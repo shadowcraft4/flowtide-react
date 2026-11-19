@@ -163,6 +163,13 @@ export function toggleLayer(type) {
   return Object.keys(layers);
 }
 
+/** Plays exactly these sounds (starting and stopping layers as needed) and returns the keys now playing. */
+export function setLayers(types) {
+  Object.keys(layers).forEach(k => { if (!types.includes(k)) stopLayer(k); });
+  types.forEach(k => { if (!layers[k]) startLayer(k); });
+  return Object.keys(layers);
+}
+
 /** Starts saved sounds on load. Browsers keep audio muted until the first click, so resume then. */
 export function restoreLayers(types) {
   if (!types.length) return;
