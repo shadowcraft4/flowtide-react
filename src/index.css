@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Most styling lives in Tailwind classes in the components. This file keeps the
+   hand-built effects that utility classes would make unreadable: design tokens,
+   living-background scenes, the progress ring, the flip-card physics, film grain
+   and the toggle switch. */
+
+@layer base {
+:root {
+  --bg: #07060b;
+  --card: #15131d;
+  --card2: #1c1a27;
+  --glass: rgba(21, 19, 29, .58);
+  --glass-strong: rgba(26, 23, 36, .82);
+  --text: #f4f2f8;
+  --muted: #9893a8;
+  --muted-soft: #716d82;
+  --accent: #8b5cf6;
+  --accent-deep: #6d35e0;
+  --accent2: #c9b8ff;
+  --warm: #ff9d6c;
+  --line: rgba(255, 255, 255, .08);
+  --line-strong: rgba(255, 255, 255, .14);
+  --danger: #f2897e;
+  --good: #5fd0a3;
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 24px;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --shadow-card: 0 24px 60px -24px rgba(0, 0, 0, .65), 0 1px 0 rgba(255, 255, 255, .04) inset;
+  --shadow-pop: 0 20px 50px -14px rgba(0, 0, 0, .55);
+  --glow-accent: 0 0 1px rgba(139, 92, 246, .4), 0 18px 40px -12px rgba(139, 92, 246, .55);
+  --flip-top-dur: 500ms;
+  --flip-bottom-dur: 280ms;
+}
+html { background: var(--bg); overflow-x: hidden; }
+body { color: var(--text); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; font-family: 'Satoshi', system-ui, -apple-system, sans-serif; }
+::selection { background: rgba(139, 92, 246, .35); color: #fff; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* Film-grain texture over the whole page — subtle, static, no image file */
+#grain {
+  position: fixed; inset: 0; z-index: 3; pointer-events: none;
+  opacity: .045; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-flex; align-items: center; width: 40px; height: 23px; flex-shrink: 0; }
+.toggle input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.toggleTrack { position: absolute; inset: 0; background: rgba(255,255,255,.08); border: 1px solid var(--line); border-radius: 999px; transition: background .2s var(--ease); }
+.toggleTrack::after { content: ""; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: var(--text); transition: transform .2s var(--ease); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.toggle input:checked + .toggleTrack { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); border-color: transparent; }
+.toggle input:checked + .toggleTrack::after { transform: translateX(17px); background: #fff; }
+
+/* ==========================================================================
+   Living background scenes (animated CSS gradients, no external images)
+   ========================================================================== */
+#sceneLayer {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden;
+  background: var(--bg);
+  transition: background 1s ease;
+}
+#sceneLayer::before, #sceneLayer::after {
+  content: ""; position: absolute; inset: -20%; opacity: 0; transition: opacity 1.2s ease;
+  background-repeat: no-repeat;
+}
+#sceneLayer.scene-plain {
+  background:
+    radial-gradient(ellipse 55% 45% at 15% -8%, rgba(139, 92, 246, .22), transparent 60%),
+    radial-gradient(ellipse 45% 38% at 92% 8%, rgba(201, 184, 255, .10), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 50% 115%, rgba(255, 157, 108, .09), transparent 60%),
+    var(--bg);
+}
+#sceneLayer.scene-forest { background: #0c1712; }
+#sceneLayer.scene-forest::before {
+  opacity: .9;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(90,160,110,.35), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(40,90,70,.4), transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(10,40,30,.8), transparent 60%);
+  animation: driftA 26s ease-in-out infinite alternate;
+}
+#sceneLayer.scene-neon { background: #0a0a16; }
+#sceneLayer.scene-neon::before {
+  opacity: .9;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,60,170,.35), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(60,160,255,.35), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(140,60,255,.4), transparent 55%);
+  animation: driftB 20s ease-in-out infinite alternate;
+}
+#sceneLayer.scene-space { background: #06070f; }
+#sceneLayer.scene-space::before {
+  opacity: 1;
+  background:
+    radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 65% 15%, #fff, transparent),
+    radial-gradient(1px 1px at 80% 60%, #fff, transparent),
+    radial-gradient(1px 1px at 35% 80%, #fff, transparent),
+    radial-gradient(1px 1px at 50% 50%, #fff, transparent),
+    radial-gradient(circle at 70% 75%, rgba(100,80,200,.35), transparent 50%);
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+#sceneLayer.scene-library { background: #1a1309; }
+#sceneLayer.scene-library::before {
+  opacity: .9;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(230,170,90,.3), transparent 45%),
+    radial-gradient(circle at 75% 60%, rgba(180,110,50,.3), transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(60,30,10,.7), transparent 60%);
+  animation: driftA 30s ease-in-out infinite alternate;
+}
+#sceneLayer.scene-ocean { background: #061420; }
+#sceneLayer.scene-ocean::before {
+  opacity: .9;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(40,130,160,.35), transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255,160,110,.25), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(10,60,90,.5), transparent 60%);
+  animation: driftB 24s ease-in-out infinite alternate;
+}
+#sceneLayer.scene-snow { background: #0c1420; }
+#sceneLayer.scene-snow::before {
+  opacity: .9;
+  background:
+    radial-gradient(circle at 25% 15%, rgba(180,210,255,.22), transparent 55%),
+    radial-gradient(circle at 80% 75%, rgba(140,170,230,.2), transparent 55%),
+    radial-gradient(circle at 50% 100%, rgba(20,35,60,.8), transparent 60%);
+  animation: driftA 32s ease-in-out infinite alternate;
+}
+#sceneLayer.scene-rain { background: #0a0f17; }
+#sceneLayer.scene-rain::before {
+  opacity: .9;
+  background:
+    radial-gradient(circle at 70% 10%, rgba(90,120,170,.28), transparent 50%),
+    radial-gradient(circle at 20% 70%, rgba(50,70,110,.3), transparent 55%),
+    radial-gradient(circle at 50% 100%, rgba(5,10,20,.85), transparent 60%);
+  animation: driftB 22s ease-in-out infinite alternate;
+}
+@keyframes driftA { 0% { transform: translate(-3%, -2%) scale(1); } 100% { transform: translate(3%, 2%) scale(1.08); } }
+@keyframes driftB { 0% { transform: translate(2%, -3%) scale(1.05); } 100% { transform: translate(-2%, 3%) scale(1); } }
+@keyframes twinkle { 0% { opacity: .7; } 100% { opacity: 1; } }
+
+/* ==========================================================================
+   Particle layer — canvas-drawn weather & ambience (snow, rain, motes, fireflies…)
+   ========================================================================== */
+#particleCanvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+
+/* Page and ring entrance animations */
+section[data-section].viewEnter { animation: viewFadeSlide .42s var(--ease) both; }
+.ringWrap.viewEnter { animation: ringCrossfade .32s var(--ease) both; }
+@keyframes viewFadeSlide { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ringCrossfade { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+
+/* ==========================================================================
+   Circular progress ring — the hero timer
+   ========================================================================== */
+.ringWrap {
+  position: relative; width: min(84vw, 320px); height: min(84vw, 320px);
+  margin: 10px auto 18px; display: flex; align-items: center; justify-content: center;
+}
+.ringWrap::before {
+  content: ""; position: absolute; inset: 6%; z-index: -1; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,.35), transparent 72%);
+  filter: blur(18px); opacity: .85; animation: ringGlowBreathe 4.5s ease-in-out infinite;
+}
+@keyframes ringGlowBreathe { 0%, 100% { opacity: .55; transform: scale(.97); } 50% { opacity: .95; transform: scale(1.03); } }
+.ringSvg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ringTrack { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 10; }
+.ringProgress {
+  fill: none; stroke: url(#ringGradient); stroke-width: 10; stroke-linecap: round;
+  transition: stroke-dashoffset .35s var(--ease);
+  filter: drop-shadow(0 0 12px rgba(139,92,246,.65));
+}
+.ringInner { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 74%; text-align: center; }
+.ringWrap.big { width: min(72vw, 460px); height: min(72vw, 460px); margin: 0 auto 14px; }
+.ringWrap.big .display { font-size: clamp(48px, 13vw, 86px); }
+.ringWrap.big .display.hrs { font-size: clamp(36px, 10vw, 62px); }
+.display {
+  font-family: 'Clash Display', sans-serif; font-size: clamp(38px, 10vw, 58px); font-weight: 600;
+  font-variant-numeric: tabular-nums; letter-spacing: -.01em; margin: 2px 0; white-space: nowrap;
+  min-height: 1.2em; color: var(--text); max-width: 100%;
+}
+.display.hrs { font-size: clamp(28px, 7.4vw, 42px); }
+.display:not(.flipMode) {
+  background: linear-gradient(180deg, #ffffff 10%, var(--accent2) 130%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 30px rgba(139,92,246,.4));
+}
+.display .d { display: inline-block; width: .72em; text-align: center; }
+
+/* ==========================================================================
+   Flip-card clock
+   ========================================================================== */
+.display.flipMode { letter-spacing: 0; filter: none; background: none; -webkit-text-fill-color: unset; color: var(--text); white-space: nowrap; }
+.flipGroup { position: relative; display: inline-block; vertical-align: middle; min-width: 1.5em; height: 1.34em; margin: 0 .06em; perspective: 5em; }
+.flipGroup .half, .flipGroup .leaf { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: linear-gradient(180deg, var(--card2), var(--card)); border: 1px solid var(--line-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.13); }
+.flipGroup .half.top, .flipGroup .leaf.top { top: 0; border-radius: .14em .14em 0 0; border-bottom: none; }
+.flipGroup .half.bottom, .flipGroup .leaf.bottom { bottom: 0; border-radius: 0 0 .14em .14em; border-top: 1px solid rgba(0,0,0,.5); }
+/* .num shrinks its own font-size to .66 of the card's, so any em inside it is
+   .66 of a card-em. Box geometry must be divided by .66 to stay in card units:
+   the digit box spans the whole card (1.34 card-em) and the bottom copy is
+   pulled up by exactly one half-card (.67 card-em), so both halves line up. */
+.flipGroup .num { position: absolute; left: 0; right: 0; top: 0; height: calc(1.34em / .66); line-height: calc(1.34em / .66); text-align: center; font-size: .66em; font-weight: 600; color: var(--text); font-family: 'Clash Display', sans-serif; }
+.flipGroup .half.bottom .num, .flipGroup .leaf.bottom .num { top: calc(-.67em / .66); }
+.flipGroup .leaf { backface-visibility: hidden; }
+.flipGroup .leaf::before { content: ""; position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.flipGroup .leaf.top::before { background: linear-gradient(to top, rgba(0,0,0,.45), rgba(0,0,0,0) 85%); }
+.flipGroup .leaf.bottom::before { background: linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,0) 85%); }
+.flipGroup .leaf.top { transform-origin: bottom; z-index: 2; }
+.flipGroup .leaf.bottom { transform-origin: top; transform: rotateX(90deg); z-index: 1; }
+/* Flip physics modeled on flipclock.app/timer's real flip_animation.css (fetched
+   and read directly — not guessed): the top leaf accelerates away under its own
+   weight, then the bottom leaf falls, lands, slightly overshoots past flat and
+   settles back — that overshoot is what reads as a real mechanical card, not a
+   flat 2-point rotation. */
+.flipGroup .leaf.flipping.top { animation: flipTopDown var(--flip-top-dur) cubic-bezier(.5,0,.85,.4) both; }
+.flipGroup .leaf.flipping.top::before { animation: shadeIn var(--flip-top-dur) cubic-bezier(.5,0,.85,.4) both; }
+.flipGroup .leaf.flipping.bottom { animation: flipBottomDown var(--flip-bottom-dur) linear var(--flip-top-dur) both; }
+.flipGroup .leaf.flipping.bottom::before { animation: shadeOut var(--flip-bottom-dur) linear var(--flip-top-dur) both; }
+@keyframes flipTopDown { 100% { transform: rotateX(-90deg); } }
+@keyframes flipBottomDown {
+  0% { transform: rotateX(90deg); animation-timing-function: cubic-bezier(.45,.2,.85,.6); }
+  70% { transform: rotateX(0deg); animation-timing-function: cubic-bezier(.2,.6,.4,1); }
+  85% { transform: rotateX(5deg); animation-timing-function: cubic-bezier(.5,0,.5,1); }
+  100% { transform: rotateX(0deg); }
+}
+@keyframes shadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes shadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .flipGroup .leaf.flipping.top { animation: shadeIn 160ms ease-out forwards; }
+  .flipGroup .leaf.flipping.bottom { transform: none; opacity: 0; animation: shadeIn 160ms ease-out forwards; }
+}
+.flipColonInline { display: inline-block; vertical-align: middle; opacity: .55; }
+
+/* Living-background preview tiles in the Style panel */
+.sceneTile.tile-plain { background: radial-gradient(circle at 30% 20%, #342a55, #0a0a0f); }
+.sceneTile.tile-forest { background: radial-gradient(circle at 30% 30%, #3f7a52, #0c1712); }
+.sceneTile.tile-neon { background: radial-gradient(circle at 30% 30%, #ff3caa, #3c3cff 60%, #0a0a16); }
+.sceneTile.tile-space { background: radial-gradient(circle at 60% 60%, #6450c8, #06070f); }
+.sceneTile.tile-library { background: radial-gradient(circle at 30% 30%, #e6aa5a, #1a1309); }
+.sceneTile.tile-ocean { background: radial-gradient(circle at 70% 70%, #2882a0, #061420); }
+.sceneTile.tile-snow { background: radial-gradient(circle at 40% 25%, #bcd4ff, #0c1420); }
+.sceneTile.tile-rain { background: radial-gradient(circle at 65% 20%, #5a78aa, #0a0f17); }
+.sceneTile.tile-aurora { background: linear-gradient(120deg, #3b82f6, #a5b4fc 40%, #ddd6fe 60%, #60a5fa); }
+.sceneTile.tile-beams { background: radial-gradient(circle at 30% 20%, #18ccfc, #6344f5 45%, #0a0a14 80%); }
+
+input[type="range"] { flex: 1; accent-color: var(--accent); padding: 0; background: transparent; border: none; height: 20px; }
