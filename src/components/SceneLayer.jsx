@@ -1,23 +1,24 @@
-import { AuroraBackground } from './ui/aurora-background';
-import { BackgroundBeams } from './ui/background-beams';
-import { ShootingStars } from './ui/shooting-stars';
-import { StarsBackground } from './ui/stars-background';
+import { useEffect, useRef } from 'react';
+import { createSceneEngine } from '../lib/scenes';
 
-/**
- * The living background. Most scenes are CSS gradients (see index.css); three use
- * Aceternity components: Aurora, Beams, and Deep Space (twinkling stars + shooting stars).
- */
+/** The vibe's painted, animated background. Switching vibes cross-fades between two canvases. */
 export default function SceneLayer({ scene }) {
+  const a = useRef(null);
+  const b = useRef(null);
+  const engine = useRef(null);
+
+  useEffect(() => {
+    engine.current = createSceneEngine([a.current, b.current]);
+    return () => engine.current.destroy();
+  }, []);
+
+  useEffect(() => { engine.current.setScene(scene); }, [scene]);
+
   return (
-    <div id="sceneLayer" className={`scene-${scene}`}>
-      {scene === 'aurora' && <AuroraBackground />}
-      {scene === 'beams' && <BackgroundBeams />}
-      {scene === 'space' && (
-        <>
-          <StarsBackground />
-          <ShootingStars starColor="#c9b8ff" trailColor="#8b5cf6" />
-        </>
-      )}
+    <div id="sceneLayer" aria-hidden="true">
+      <canvas ref={a} className="sceneCanvas" />
+      <canvas ref={b} className="sceneCanvas off" />
+      <div id="sceneScrim" />
     </div>
   );
 }

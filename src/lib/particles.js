@@ -1,108 +1,132 @@
-// Canvas particle layer: snow, rain, fireflies, bokeh, bubbles, drifting motes.
+// Canvas effect layer drawn over the vibe's scene: rain, petals, snow, sparkles,
+// embers and drifting dust. The vibe picks the effect and its colours; the user
+// only sets how much of it there is.
 
-const COUNTS = { motes: 36, fireflies: 22, bokeh: 16, none: 0, bubbles: 24, snow: 90, rain: 140 };
+const MAX = { rain: 130, petals: 36, snow: 110, sparkles: 36, embers: 55, motes: 55, none: 0 };
 
-function rand(a, b) { return a + Math.random() * (b - a); }
-function hexToRgba(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
+const rnd = (a, b) => a + Math.random() * (b - a);
 
 export function createParticleEngine(canvas) {
   const ctx = canvas.getContext('2d');
-  let items = [], type = 'motes', raf = null, w = 0, h = 0, lastT = 0;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W = 0, H = 0, parts = [], kind = 'none', colors = ['#ffffff'], amount = 0.55;
+  let alpha = 1, pending = null, raf = null;
 
   function resize() {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    w = window.innerWidth; h = window.innerHeight;
-    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fit();
+    if (reduced) draw(0);
   }
 
-  function make(t) {
-    const x = rand(0, w), y = rand(0, h);
-    if (t === 'snow') return { x, y, r: rand(1.5, 3.5), vy: rand(14, 34), vx: rand(-6, 6), sway: rand(0, Math.PI * 2), swaySpeed: rand(.5, 1.3), o: rand(.4, .9) };
-    if (t === 'rain') return { x, y, len: rand(10, 22), vy: rand(420, 650), vx: -rand(40, 70), o: rand(.15, .4) };
-    if (t === 'fireflies') return { x, y, r: rand(1.5, 3), vx: rand(-6, 6), vy: rand(-6, 6), phase: rand(0, Math.PI * 2), speed: rand(.6, 1.4), o: rand(.4, .9) };
-    if (t === 'bokeh') return { x, y, r: rand(18, 48), vx: rand(-4, 4), vy: rand(-4, 4), hue: ['#ff3caa', '#3c3cff', '#8b5cf6'][Math.floor(rand(0, 3))], phase: rand(0, Math.PI * 2), o: rand(.08, .18) };
-    if (t === 'bubbles') return { x, y: h + rand(0, 200), r: rand(2, 6), vy: -rand(16, 40), o: rand(.2, .5) };
-    return { x, y, r: rand(1, 2.4), vx: rand(-4, 4), vy: rand(-10, -2), phase: rand(0, Math.PI * 2), o: rand(.25, .55) };
-  }
-
-  function step(dt, t) {
-    ctx.clearRect(0, 0, w, h);
-    for (const p of items) {
-      if (type === 'snow') {
-        p.sway += p.swaySpeed * dt;
-        p.x += (p.vx + Math.sin(p.sway) * 14) * dt; p.y += p.vy * dt;
-        if (p.y > h + 5) { p.y = -5; p.x = rand(0, w); }
-        if (p.x < -10) p.x = w + 10;
-        if (p.x > w + 10) p.x = -10;
-        ctx.beginPath(); ctx.fillStyle = `rgba(255,255,255,${p.o})`;
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-      } else if (type === 'rain') {
-        p.x += p.vx * dt; p.y += p.vy * dt;
-        if (p.y > h + 20) { p.y = -20; p.x = rand(0, w); }
-        ctx.strokeStyle = `rgba(190,210,255,${p.o})`; ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.vx * .05, p.y - p.len); ctx.stroke();
-      } else if (type === 'fireflies') {
-        p.phase += p.speed * dt;
-        p.x += p.vx * dt * .3; p.y += p.vy * dt * .3;
-        if (p.x < 0) p.x = w;
-        if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h;
-        if (p.y > h) p.y = 0;
-        const glow = p.o * (0.5 + 0.5 * Math.sin(p.phase));
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
-        g.addColorStop(0, `rgba(255,240,160,${glow})`); g.addColorStop(1, 'rgba(255,240,160,0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2); ctx.fill();
-      } else if (type === 'bokeh') {
-        p.phase += 0.3 * dt;
-        p.x += p.vx * dt * .5; p.y += p.vy * dt * .5;
-        if (p.x < -60) p.x = w + 60;
-        if (p.x > w + 60) p.x = -60;
-        if (p.y < -60) p.y = h + 60;
-        if (p.y > h + 60) p.y = -60;
-        const pulse = p.o * (0.7 + 0.3 * Math.sin(p.phase));
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        g.addColorStop(0, hexToRgba(p.hue, pulse)); g.addColorStop(1, hexToRgba(p.hue, 0));
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-      } else if (type === 'bubbles') {
-        p.y += p.vy * dt; p.x += Math.sin(t / 900 + p.y) * 0.3;
-        if (p.y < -10) { p.y = h + 10; p.x = rand(0, w); }
-        ctx.strokeStyle = `rgba(170,220,255,${p.o})`; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.stroke();
-      } else {
-        p.phase += dt;
-        p.x += p.vx * dt * .4; p.y += p.vy * dt * .4;
-        if (p.y < -10) { p.y = h + 10; p.x = rand(0, w); }
-        const tw = p.o * (0.6 + 0.4 * Math.sin(p.phase * 1.3));
-        ctx.fillStyle = `rgba(201,184,255,${tw})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-      }
+  function spawn(k, anywhere) {
+    const c = colors[Math.floor(Math.random() * colors.length)];
+    const y = anywhere ? rnd(0, H) : null;
+    switch (k) {
+      case 'rain': return { x: rnd(-50, W), y: y ?? rnd(-H * 0.3, -10), vy: rnd(9, 15), len: rnd(10, 22), a: rnd(0.2, 0.5), c };
+      case 'petals': return { x: rnd(0, W), y: y ?? -20, vy: rnd(0.5, 1.3), sw: rnd(0.6, 1.6), ph: rnd(0, 6), rot: rnd(0, 6), vr: rnd(-0.03, 0.03), s: rnd(5, 9), a: rnd(0.7, 1), c };
+      case 'snow': return { x: rnd(0, W), y: y ?? -8, vy: rnd(0.4, 1.4), sw: rnd(0.3, 1), ph: rnd(0, 6), r: rnd(1, 3), a: rnd(0.5, 0.95), c: '#ffffff' };
+      case 'sparkles': return { x: rnd(0, W), y: rnd(0, H), life: anywhere ? rnd(0, 1) : 0, sp: rnd(0.004, 0.01), s: rnd(4, 10), c };
+      case 'embers': return { x: rnd(0, W * 0.5), y: y ?? H + 10, vy: rnd(-0.4, -1.1), sw: rnd(0.3, 0.9), ph: rnd(0, 6), r: rnd(1, 2.6), a: rnd(0.5, 1), c };
+      default: return { x: rnd(0, W), y: y ?? H + 10, vy: rnd(-0.15, -0.45), sw: rnd(0.2, 0.5), ph: rnd(0, 6), r: rnd(1, 3.2), a: rnd(0.3, 0.7), c };
     }
   }
 
+  function fit() {
+    const n = Math.round((MAX[kind] || 0) * amount * (W / 900 + 0.2));
+    while (parts.length < n) parts.push(spawn(kind, true));
+    if (parts.length > n) parts.length = n;
+  }
+
+  function star(x, y, s) {
+    ctx.beginPath(); ctx.moveTo(x, y - s);
+    ctx.quadraticCurveTo(x, y, x + s, y); ctx.quadraticCurveTo(x, y, x, y + s);
+    ctx.quadraticCurveTo(x, y, x - s, y); ctx.quadraticCurveTo(x, y, x, y - s); ctx.fill();
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
+      ctx.fillStyle = ctx.strokeStyle = p.c;
+      switch (kind) {
+        case 'rain':
+          ctx.globalAlpha = p.a * alpha; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.len * 0.25, p.y - p.len); ctx.stroke();
+          if (!reduced) { p.y += p.vy; p.x += p.vy * 0.25; if (p.y > H + 20) parts[i] = spawn('rain'); }
+          break;
+        case 'petals':
+          ctx.globalAlpha = p.a * alpha; ctx.save();
+          ctx.translate(p.x + Math.sin(t / 900 + p.ph) * 18 * p.sw, p.y); ctx.rotate(p.rot);
+          ctx.beginPath(); ctx.ellipse(0, 0, p.s, p.s * 0.55, 0, 0, 7); ctx.fill(); ctx.restore();
+          if (!reduced) { p.y += p.vy; p.rot += p.vr; p.x -= 0.35; if (p.y > H + 20) parts[i] = spawn('petals'); }
+          break;
+        case 'snow':
+          ctx.globalAlpha = p.a * alpha;
+          ctx.beginPath(); ctx.arc(p.x + Math.sin(t / 1200 + p.ph) * 10 * p.sw, p.y, p.r, 0, 7); ctx.fill();
+          if (!reduced) { p.y += p.vy; if (p.y > H + 10) parts[i] = spawn('snow'); }
+          break;
+        case 'sparkles': {
+          const k = reduced ? 0.8 : Math.sin(p.life * Math.PI);
+          ctx.globalAlpha = k * alpha; star(p.x, p.y, p.s * k);
+          if (!reduced) { p.life += p.sp; if (p.life >= 1) parts[i] = spawn('sparkles'); }
+          break;
+        }
+        case 'embers':
+          ctx.globalAlpha = p.a * alpha * (0.6 + 0.4 * Math.sin(t / 120 + p.ph));
+          ctx.shadowBlur = 8; ctx.shadowColor = p.c;
+          ctx.beginPath(); ctx.arc(p.x + Math.sin(t / 700 + p.ph) * 12 * p.sw, p.y, p.r, 0, 7); ctx.fill();
+          ctx.shadowBlur = 0;
+          if (!reduced) { p.y += p.vy; if (p.y < -10) parts[i] = spawn('embers'); }
+          break;
+        default:
+          ctx.globalAlpha = p.a * alpha;
+          ctx.beginPath(); ctx.arc(p.x + Math.sin(t / 1600 + p.ph) * 14 * p.sw, p.y, p.r, 0, 7); ctx.fill();
+          if (!reduced) { p.y += p.vy; if (p.y < -10) parts[i] = spawn('motes'); }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  let last = 0;
   function loop(t) {
-    const dt = Math.min(0.05, (t - (lastT || t)) / 1000);
-    lastT = t;
-    if (!document.hidden) step(dt, t);
+    const dt = Math.min(0.05, (t - (last || t)) / 1000); last = t;
+    if (!document.hidden) {
+      // A new vibe fades the old effect out before the new one fades in.
+      if (pending) {
+        alpha -= dt * 2.5;
+        if (alpha <= 0) { ({ kind, colors } = pending); pending = null; parts = []; fit(); alpha = 0; }
+      } else if (alpha < 1) alpha = Math.min(1, alpha + dt * 1.5);
+      draw(t);
+    }
     raf = requestAnimationFrame(loop);
   }
 
   window.addEventListener('resize', resize);
+  resize();
 
   return {
-    start(nextType) {
-      type = nextType;
-      resize();
-      items = Array.from({ length: COUNTS[type] ?? 30 }, () => make(type));
-      if (!raf) raf = requestAnimationFrame(loop);
+    start(next) {
+      const first = kind === 'none' && !parts.length && !raf;
+      if (reduced || first) {
+        kind = next.kind; colors = next.colors; amount = next.amount;
+        parts = []; fit(); alpha = 1; draw(0);
+        if (!reduced && !raf) raf = requestAnimationFrame(loop);
+        return;
+      }
+      amount = next.amount;
+      if (next.kind === kind && !pending) {
+        colors = next.colors; parts = []; fit();
+      } else {
+        pending = { kind: next.kind, colors: next.colors };
+      }
     },
+    setAmount(a) { amount = a; fit(); if (reduced) draw(0); },
     destroy() {
-      cancelAnimationFrame(raf);
-      raf = null;
+      cancelAnimationFrame(raf); raf = null;
       window.removeEventListener('resize', resize);
     },
   };

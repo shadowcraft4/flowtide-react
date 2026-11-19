@@ -93,7 +93,7 @@ const FloatingDockDesktop = ({ items, className }: { items: DockItem[]; classNam
       onMouseMove={(e) => mouseX.set(e.pageX)}
       onMouseLeave={() => mouseX.set(Infinity)}
       className={cn(
-        "mx-auto hidden h-16 items-end gap-4 rounded-2xl border border-line-strong bg-glass-strong px-4 pb-3 shadow-pop backdrop-blur-xl md:flex",
+        "mx-auto hidden h-16 items-end gap-4 rounded-full border border-line bg-glass px-4 pb-3 shadow-pop backdrop-blur-xl md:flex",
         className,
       )}
     >
@@ -133,8 +133,8 @@ function IconContainer({ mouseX, title, icon, onClick, active }: DockItem & { mo
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className={cn(
-          "relative flex aspect-square items-center justify-center rounded-full border border-line bg-white/5 text-fg transition-colors",
-          active && "border-accent/60 bg-accent/20 text-accent-soft",
+          "relative flex aspect-square items-center justify-center rounded-full border border-line bg-fg/[.06] text-fg transition-colors",
+          active && "border-transparent bg-fg text-ink",
         )}
       >
         <AnimatePresence>
@@ -143,7 +143,7 @@ function IconContainer({ mouseX, title, icon, onClick, active }: DockItem & { mo
               initial={{ opacity: 0, y: 10, x: "-50%" }}
               animate={{ opacity: 1, y: 0, x: "-50%" }}
               exit={{ opacity: 0, y: 2, x: "-50%" }}
-              className="absolute -top-8 left-1/2 w-fit whitespace-pre rounded-md border border-line-strong bg-card2 px-2 py-0.5 text-xs text-fg"
+              className="absolute -top-8 left-1/2 w-fit whitespace-pre rounded-md border border-line-strong bg-surface px-2 py-0.5 text-xs text-fg"
             >
               {title}
             </motion.div>

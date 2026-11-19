@@ -8,8 +8,8 @@ const muted = 'text-sm text-muted';
 
 function Stat({ value, label }) {
   return (
-    <div className="stat rounded-panel border border-line bg-white/[.03] px-3 py-4 text-center">
-      <b className="block bg-gradient-to-b from-fg to-accent-soft bg-clip-text font-display text-[30px] font-semibold leading-none text-transparent">{value}</b>
+    <div className="stat rounded-panel border border-line bg-fg/[.05] px-3 py-4 text-center">
+      <b className="block font-display text-[32px] font-extrabold leading-none text-fg [font-stretch:85%]">{value}</b>
       <span className="mt-1.5 block text-[11.5px] text-muted">{label}</span>
     </div>
   );
@@ -45,7 +45,7 @@ export default function StatsView({ stats, sessions, labels, goal }) {
       <Card title="Weekly goal">
         <ProgressBar pct={stats.goalPct} />
         <p className={muted}>{Math.round(stats.weekMin)} of {goal} min this week ({Math.round(stats.goalPct)}%)</p>
-        {stats.goalReached && <p className="mt-2 inline-block rounded-full border border-good/30 bg-good/10 px-3 py-1 text-[13px] text-good">🏆 Goal reached — nice work this week.</p>}
+        {stats.goalReached && <p className="mt-2 inline-block rounded-full border border-good/30 bg-good/10 px-3 py-1 text-[13px] text-good">Goal reached. Nice work this week.</p>}
       </Card>
 
       <Card title="By subject">
@@ -55,7 +55,7 @@ export default function StatsView({ stats, sessions, labels, goal }) {
               <span className="flex items-center gap-2"><Swatch color={r.color || '#9893a8'} />{r.name}</span>
               <span className="text-muted">{Math.round(r.secs / 60)} min</span>
             </div>
-            <ProgressBar pct={(r.secs / maxSubject * 100).toFixed(1)} color={r.color || '#8b5cf6'} className="mt-1.5 h-2" />
+            <ProgressBar pct={(r.secs / maxSubject * 100).toFixed(1)} color={r.color} className="mt-1.5 h-2" />
           </div>
         ))}
         {!stats.subjects.length && <p className={muted}>No sessions tagged with a subject yet.</p>}
@@ -65,10 +65,10 @@ export default function StatsView({ stats, sessions, labels, goal }) {
         <div className="mb-3 flex h-40 items-end gap-2.5">
           {stats.week.map((d, i) => (
             <div key={i} className="flex h-full flex-1 flex-col items-center gap-1.5">
-              <div className="relative w-full flex-1 overflow-hidden rounded-[10px] bg-white/[.04]">
+              <div className="relative w-full flex-1 overflow-hidden rounded-[10px] bg-fg/[.06]">
                 <i
                   title={`${Math.round(d.mins)} min`}
-                  className="absolute inset-x-0 bottom-0 rounded-[10px] bg-gradient-to-t from-accent-deep via-accent to-accent-soft shadow-[0_0_18px_rgba(139,92,246,.35)] transition-[height] duration-700 ease-out"
+                  className="absolute inset-x-0 bottom-0 rounded-[10px] bg-accent shadow-[0_0_18px_rgb(var(--accent)/.35)] transition-[height] duration-700 ease-out"
                   style={{ height: Math.max(2, d.mins / maxDay * 100) + '%' }}
                 />
               </div>
@@ -84,7 +84,7 @@ export default function StatsView({ stats, sessions, labels, goal }) {
           {stats.heat.map(c => (
             <div
               key={c.key} title={`${c.key}: ${Math.round(c.mins)} min`}
-              className={cn('aspect-square rounded-[3px]', c.opacity ? 'bg-accent' : 'bg-white/[.05]')}
+              className={cn('aspect-square rounded-[3px]', c.opacity ? 'bg-accent' : 'bg-fg/[.07]')}
               style={c.opacity ? { opacity: c.opacity } : undefined}
             />
           ))}
@@ -92,7 +92,7 @@ export default function StatsView({ stats, sessions, labels, goal }) {
       </Card>
 
       <Card title="Session history" aside={`${filtered.length} sessions`}>
-        <select value={validFilter} onChange={e => setFilter(e.target.value)} className={cn(inputClass, 'mb-3 bg-card')}>
+        <select value={validFilter} onChange={e => setFilter(e.target.value)} className={cn(inputClass, 'mb-3 bg-surface')}>
           <option value="all">All subjects</option>
           <option value="">No subject</option>
           {labels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}

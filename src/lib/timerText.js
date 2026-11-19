@@ -1,17 +1,17 @@
 export function phaseText(mode, phase, running) {
-  if (mode === 'stopwatch') return running ? 'Stopwatch running' : 'Stopwatch';
-  if (mode === 'countdown') return running ? 'Countdown running' : 'Countdown ready';
-  if (phase === 'focus') return running ? 'Focusing' : 'Focus ready';
-  if (phase === 'longbreak') return 'Long break' + (running ? '' : ' ready');
-  return 'Break' + (running ? '' : ' ready');
+  if (mode === 'stopwatch') return running ? 'stopwatch running' : 'stopwatch';
+  if (mode === 'countdown') return running ? 'countdown running' : 'countdown ready';
+  if (phase === 'focus') return running ? 'focusing' : 'focus ready';
+  if (phase === 'longbreak') return 'long break' + (running ? '' : ' ready');
+  return 'break' + (running ? '' : ' ready');
 }
 
 export function summaryText(mode, S) {
-  if (mode === 'pomodoro') return `Focus ${S.focus}m · Break ${S.brk}m · Long break ${S.longBrk}m every ${S.longEvery}`;
-  if (mode === 'countdown') return `Countdown length: ${S.cd} min`;
-  return 'Counts up until you stop it';
+  if (mode === 'pomodoro') return `${S.focus} min focus, ${S.brk} min break, ${S.longBrk} min long break every ${S.longEvery}`;
+  if (mode === 'countdown') return `countdown length ${S.cd} min`;
+  return 'counts up until you stop it';
 }
 
 export function startLabel(running, elapsedMs) {
-  return running ? 'Pause' : elapsedMs > 0 ? 'Resume' : 'Start';
+  return running ? 'pause' : elapsedMs > 0 ? 'resume' : 'start';
 }

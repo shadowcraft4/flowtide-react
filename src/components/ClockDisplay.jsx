@@ -1,8 +1,7 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-// Clash Display has no tabular (equal-width) figures and ignores
-// font-variant-numeric: tabular-nums, so "1" and "5" render at very different
-// widths. Each digit gets its own fixed-width cell (.d) so pairs stay centred.
+// Each digit gets its own fixed-width cell (.d) so "1" and "5" take the same
+// space and the time never shifts sideways as it counts down.
 export function Digits({ str }) {
   return str.split('').map((ch, i) =>
     ch === ':' ? <span key={i} className="flipColonInline">:</span> : <span key={i} className="d">{ch}</span>
